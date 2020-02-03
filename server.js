@@ -1,75 +1,83 @@
-// 1. import express ด้วยการใช้ require
-const express = require('express');
+const express = require("express");
+const mongoose = require("mongoose");
+const server = express();
+const Product = require("./product");
 
-// 2. express() เป็นฟังค์ชั่น และ assign ไว้ที่ตัวแปร app
-const app = express();
+const router = express.Router();
+server.use('/api/v2', router);
 
-app.use(express.json())
- 
-// 3. app เป็น object และมี function ชื่อเดียวกับ HTTP Method ครับ
-// ตัวอย่างคือ `.get()` เหมือนกับ GET
-app.get('/', function (req, res) {
-  res.send('Hello World')
+server.use(express.json());
+
+mongoose.connect("mongodb://128.199.208.132:27017/product", {
+  useNewUrlParser: true
 });
 
-// hi
-app.get('/hi', (req, res) => {
-    const { name, email } = req.query;
-    res.send('hi!');
-  });
+mongoose.connection.on("error", err => {
+  console.error("MongoDB error", err);
+});
 
-// dynamic 
-app.get('/hi/:name', (req, res) => {
-    res.send(`by! ${req.params.name}`);
-  });
+server.get("/", function(req, res) {
+  res.send("API");
+});
 
-  
+// ++++++++++++++ API ++++++++++++++++ //
 
-  // ++++++++++++++ API ++++++++++++++++ //
 
-  const url = '/api/v2'
 
-  app.get(`${url}/hello/:message`, (req, res) => {
-    const { params } = req
-    res.json({ message: 'req!', params })
-    res.send('Success')
-  })
+router.get('/testapi', (req, res) => {
+  res.send("Success");
+});
 
-  app.get(`${url}/hello`, (req, res) => {
-    res.send('Success')
-  })
+///////////////
 
-  ///////////////
-
-  app.get(`${url}/products`, (req, res) => {
+/* server.get(`${url}/products`, (req, res) => {
     res.json(products)
-  })
-  
-  app.get(`${url}/products/:id`, (req, res) => {
-    const { id } = req.params
-    const result = products.find(product => product.id === id)
-    res.json(result)
-  })
-  
-  app.post(`${url}/products`, (req, res) => {
-    const payload = req.body
-    res.json(payload)
-  })
-  
-  app.put(`${url}/products/:id`, (req, res) => {
-    const { id } = req.params
-    res.json({ id })
-  })
-  
-  app.delete(`${url}/products/:id`, (req, res) => {
-    const { id } = req.params
-    res.json({ id })
-  })
+  })*/
 
-  // ========================================== //
+// mock data
+const products = [{}];
 
-// 4. listen() เป็น function คล้ายๆ http module เพื่อเอาไว้ระบุว่า server จะรัน ด้วย port อะไร
-app.listen(9000, () => {
-    console.log('Application is running on port 9000');
-    console.log('http://localhost:9000/')
-  })
+router.get('/products', async (req, res) => {
+  const products = await Product.find({});
+  res.json(products);
+});
+
+router.post('/products', async (req, res) => {
+  const payload = req.body;
+  const product = new Product(payload);
+  await product.save();
+  res.status(201).end();
+});
+
+router.get('/products/:id', async (req, res) => {
+  const { id } = req.params;
+  const product = await Product.findById(id);
+  res.json(product);
+});
+
+router.post('/products', (req, res) => {
+  const payload = req.body;
+  res.json(payload);
+});
+
+router.put('/products/:id', async (req, res) => {
+  const payload = req.body;
+  const { id } = req.params;
+
+  const product = await Product.findByIdAndUpdate(id, { $set: payload });
+  res.json(product);
+});
+
+router.delete('/products/:id', async (req, res) => {
+  const { id } = req.params;
+
+  await Product.findByIdAndDelete(id);
+  res.status(204).end();
+});
+
+// ========================================== //
+
+server.listen(9000, () => {
+  console.log("Application is running on port 9000");
+  console.log("http://localhost:9000/");
+});
