@@ -2,7 +2,9 @@ const express = require("express");
 const mongoose = require("mongoose");
 const server = express();
 const Product = require("./product");
+const cors = require('cors');
 
+server.use(cors());
 server.use(express.json());
 
 mongoose.connect("mongodb://128.199.208.132:27017/product", {
